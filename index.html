@@ -509,7 +509,7 @@
     const TAU = Math.PI * 2;
 
     /* ── Halftone grid ── */
-    const SP   = 13;
+    const SP   = (window.innerHeight > window.innerWidth) ? 8 : 13;
     const COLS = Math.ceil(W / SP) + 1;
     const ROWS = Math.ceil(H / SP) + 1;
 
