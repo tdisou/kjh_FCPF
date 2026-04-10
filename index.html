@@ -11,51 +11,85 @@
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-    /* ── Name prompt ── */
-    #namePrompt {
-      position:fixed; inset:0; z-index:200;
-      background:#080808;
-      display:flex; align-items:center; justify-content:center;
-      transition:opacity 0.7s ease;
-    }
-    #namePrompt.hidden { opacity:0; pointer-events:none; }
-    #namePromptInner {
-      text-align:center; display:flex; flex-direction:column;
-      align-items:center; gap:32px;
-    }
-    #nameLabel {
+    /* ── Change Name button ── */
+    #changeNameBtn {
+      position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+      z-index:55;
+      background:rgba(20,20,20,0.75);
+      border:1px solid rgba(255,255,255,0.30);
+      color:rgba(255,255,255,0.80);
       font-family:'Inter',sans-serif; font-weight:300;
-      font-size:10px; letter-spacing:0.22em;
-      color:rgba(255,255,255,0.28); text-transform:uppercase;
+      font-size:9px; letter-spacing:0.20em; text-transform:uppercase;
+      padding:9px 22px; border-radius:40px;
+      cursor:pointer; white-space:nowrap;
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      transition:background 0.25s, border-color 0.25s, color 0.25s;
+      -webkit-tap-highlight-color:transparent;
     }
-    #nameFields {
-      display:flex; flex-direction:column; align-items:center; gap:18px;
+    #changeNameBtn:hover { background:rgba(40,40,40,0.90); border-color:rgba(255,255,255,0.55); color:#fff; }
+    body.inverted #changeNameBtn {
+      background:rgba(230,230,230,0.80); border-color:rgba(0,0,0,0.25); color:rgba(0,0,0,0.75);
     }
-    .name-part {
+    body.inverted #changeNameBtn:hover {
+      background:rgba(210,210,210,0.95); border-color:rgba(0,0,0,0.50); color:#000;
+    }
+    @media (orientation: portrait) { #changeNameBtn { bottom:90px; } }
+
+    /* ── Name change modal ── */
+    #nameModal {
+      position:fixed; inset:0; z-index:150;
+      background:rgba(8,8,8,0.88);
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      display:none; align-items:center; justify-content:center;
+      opacity:0; transition:opacity 0.35s ease;
+    }
+    body.inverted #nameModal { background:rgba(240,240,240,0.88); }
+    #nameModal.open { display:flex; }
+    #nameModal.visible { opacity:1; }
+    #nameModalInner {
+      display:flex; flex-direction:column; align-items:center; gap:28px;
+    }
+    #nameModalLabel {
+      font-family:'Inter',sans-serif; font-weight:300;
+      font-size:9px; letter-spacing:0.22em; text-transform:uppercase;
+      color:rgba(255,255,255,0.28);
+    }
+    body.inverted #nameModalLabel { color:rgba(0,0,0,0.30); }
+    #nameModalFields { display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .nm-input {
       font-family:'Syne',sans-serif; font-weight:800;
-      font-size: clamp(32px, 10vw, 88px);
+      font-size:clamp(30px, 9vw, 80px);
       letter-spacing:0.08em; text-transform:uppercase; text-align:center;
       background:none; border:none;
-      border-bottom:1px solid rgba(255,255,255,0.15);
+      border-bottom:1px solid rgba(255,255,255,0.18);
       color:rgba(255,255,255,0.90);
-      width:72vw; max-width:560px;
+      width:70vw; max-width:520px;
       outline:none; padding-bottom:6px;
-      caret-color:rgba(255,255,255,0.5);
+      caret-color:rgba(255,255,255,0.6);
       transition:border-color 0.2s;
     }
-    .name-part:focus { border-bottom-color:rgba(255,255,255,0.45); }
-    .name-part::placeholder { color:rgba(255,255,255,0.10); }
-    #nameConfirm {
-      background:none; border:1px solid rgba(255,255,255,0.20);
-      color:rgba(255,255,255,0.45);
+    body.inverted .nm-input {
+      border-bottom-color:rgba(0,0,0,0.18); color:rgba(0,0,0,0.85);
+      caret-color:rgba(0,0,0,0.5);
+    }
+    .nm-input:focus { border-bottom-color:rgba(255,255,255,0.50); }
+    body.inverted .nm-input:focus { border-bottom-color:rgba(0,0,0,0.50); }
+    .nm-input::placeholder { color:rgba(255,255,255,0.10); }
+    body.inverted .nm-input::placeholder { color:rgba(0,0,0,0.12); }
+    #nameModalConfirm {
+      background:none; border:1px solid rgba(255,255,255,0.22);
+      color:rgba(255,255,255,0.50);
       font-family:'Inter',sans-serif; font-weight:300;
-      font-size:10px; letter-spacing:0.20em;
-      padding:12px 32px; border-radius:40px;
-      cursor:pointer; text-transform:uppercase;
+      font-size:9px; letter-spacing:0.20em; text-transform:uppercase;
+      padding:10px 28px; border-radius:40px; cursor:pointer;
       transition:border-color 0.2s, color 0.2s;
       -webkit-tap-highlight-color:transparent;
     }
-    #nameConfirm:hover { border-color:rgba(255,255,255,0.50); color:rgba(255,255,255,0.85); }
+    body.inverted #nameModalConfirm {
+      border-color:rgba(0,0,0,0.22); color:rgba(0,0,0,0.45);
+    }
+    #nameModalConfirm:hover { border-color:rgba(255,255,255,0.55); color:rgba(255,255,255,0.90); }
+    body.inverted #nameModalConfirm:hover { border-color:rgba(0,0,0,0.55); color:rgba(0,0,0,0.90); }
 
     @keyframes camPulse {
       0%,100% { transform:scale(1);   opacity:0.6; }
@@ -174,34 +208,30 @@
     #modeSwitch {
       position:fixed; right:24px; top:50%; transform:translateY(-50%);
       z-index:50; cursor:pointer; -webkit-tap-highlight-color:transparent;
+      background:rgba(20,20,20,0.75);
+      border:1px solid rgba(255,255,255,0.28);
+      border-radius:40px; padding:0;
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      transition:background 0.4s ease, border-color 0.4s ease;
     }
     @media (orientation: portrait) {
       #modeSwitch { right:auto; left:50%; top:auto; bottom:36px; transform:translateX(-50%); }
     }
-    /* Soft backdrop behind modeSwitch */
-    #modeSwitch::before {
-      content:''; position:absolute; top:50%; left:50%;
-      transform:translate(-50%,-50%);
-      width:90px; height:90px; border-radius:50%;
-      background:radial-gradient(circle, rgba(0,0,0,0.55) 0%, transparent 72%);
-      pointer-events:none; z-index:-1;
-      transition:background 0.5s ease;
-    }
-    body.inverted #modeSwitch::before {
-      background:radial-gradient(circle, rgba(255,255,255,0.65) 0%, transparent 72%);
+    body.inverted #modeSwitch {
+      background:rgba(230,230,230,0.80); border-color:rgba(0,0,0,0.25);
     }
     .switch-track {
       width:34px; height:19px; border-radius:10px;
-      background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.28);
+      background:rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.35);
       position:relative; transition:background 0.4s ease, border-color 0.4s ease;
     }
-    body.inverted .switch-track { background:rgba(0,0,0,0.12); border-color:rgba(0,0,0,0.20); }
+    body.inverted .switch-track { background:rgba(0,0,0,0.15); border-color:rgba(0,0,0,0.25); }
     .switch-thumb {
       position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%;
-      background:rgba(255,255,255,0.75);
+      background:rgba(255,255,255,0.90);
       transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), background 0.4s ease;
     }
-    body.inverted .switch-thumb { transform:translateX(15px); background:rgba(0,0,0,0.55); }
+    body.inverted .switch-thumb { transform:translateX(15px); background:rgba(0,0,0,0.60); }
 
     /* ── Chat icon button ── */
     #chatBtn {
@@ -380,25 +410,6 @@
 </head>
 <body>
 
-  <!-- Name input prompt -->
-  <div id="namePrompt">
-    <div id="namePromptInner">
-      <div id="nameLabel">Enter your name</div>
-      <div id="nameFields">
-        <input class="name-part" id="namePart1" type="text" maxlength="12"
-               autocomplete="off" autocorrect="off" autocapitalize="characters"
-               spellcheck="false" placeholder="—">
-        <input class="name-part" id="namePart2" type="text" maxlength="12"
-               autocomplete="off" autocorrect="off" autocapitalize="characters"
-               spellcheck="false" placeholder="—">
-        <input class="name-part" id="namePart3" type="text" maxlength="12"
-               autocomplete="off" autocorrect="off" autocapitalize="characters"
-               spellcheck="false" placeholder="—">
-      </div>
-      <button id="nameConfirm">Continue</button>
-    </div>
-  </div>
-
   <div id="bg"></div>
   <canvas id="bgArt"></canvas>
 
@@ -434,6 +445,28 @@
   <canvas id="grain"></canvas>
   <canvas id="lensCanvas"></canvas>
   <div id="lens"></div>
+
+  <!-- Change Name button -->
+  <button id="changeNameBtn">Change Name</button>
+
+  <!-- Name change modal -->
+  <div id="nameModal">
+    <div id="nameModalInner">
+      <div id="nameModalLabel">Enter your name</div>
+      <div id="nameModalFields">
+        <input class="nm-input" id="nmPart1" type="text" maxlength="12"
+               autocomplete="off" autocorrect="off" autocapitalize="characters"
+               spellcheck="false" placeholder="—">
+        <input class="nm-input" id="nmPart2" type="text" maxlength="12"
+               autocomplete="off" autocorrect="off" autocapitalize="characters"
+               spellcheck="false" placeholder="—">
+        <input class="nm-input" id="nmPart3" type="text" maxlength="12"
+               autocomplete="off" autocorrect="off" autocapitalize="characters"
+               spellcheck="false" placeholder="—">
+      </div>
+      <button id="nameModalConfirm">Confirm</button>
+    </div>
+  </div>
 
   <!-- Mode toggle switch -->
   <div id="modeSwitch">
@@ -472,61 +505,6 @@
   /* ─────────────────────────────────────────
      CONVERSATION DATA
   ───────────────────────────────────────── */
-  /* ── Global name parts (default = KIM / JEONG / HWAN) ── */
-  let nameParts = ['KIM', 'JEONG', 'HWAN'];
-  let userName  = 'KIMJEONGHWAN';
-
-  /* ── Name prompt logic ── */
-  (function() {
-    const promptEl = document.getElementById('namePrompt');
-    const p1 = document.getElementById('namePart1');
-    const p2 = document.getElementById('namePart2');
-    const p3 = document.getElementById('namePart3');
-    const confirmBtn = document.getElementById('nameConfirm');
-
-    function calcPx(parts) {
-      const longest = Math.max(...parts.map(p => p.length || 1));
-      return Math.min(Math.round(window.innerWidth * 0.72 / (longest * 0.68)), 88);
-    }
-
-    function applyName() {
-      const a = (p1.value.trim() || 'KIM').toUpperCase();
-      const b = (p2.value.trim() || 'JEONG').toUpperCase();
-      const cc= (p3.value.trim() || 'HWAN').toUpperCase();
-      nameParts = [a, b, cc].filter(s => s.length > 0);
-      if (!nameParts.length) nameParts = ['KIM', 'JEONG', 'HWAN'];
-      userName = nameParts.join(' ');
-
-      /* Update visible h1s */
-      const nameH = document.querySelector('.name-h');
-      const nameV = document.querySelector('.name-v');
-      const px = calcPx(nameParts);
-
-      nameH.textContent = nameParts.join(' ');
-      nameH.style.fontSize = Math.min(Math.round(window.innerWidth * 0.72 / (userName.length * 0.68)), 100) + 'px';
-      nameH.style.whiteSpace = 'nowrap';
-
-      nameV.innerHTML = nameParts.join('<br>');
-      nameV.style.fontSize = px + 'px';
-
-      document.title = userName;
-      if (typeof renderText === 'function') renderText();
-
-      promptEl.classList.add('hidden');
-      setTimeout(() => { promptEl.style.display = 'none'; }, 700);
-    }
-
-    /* Enter in each field advances to next or submits */
-    p1.addEventListener('keydown', e => { if (e.key === 'Enter') p2.focus(); });
-    p2.addEventListener('keydown', e => { if (e.key === 'Enter') p3.focus(); });
-    p3.addEventListener('keydown', e => { if (e.key === 'Enter') applyName(); });
-
-    confirmBtn.addEventListener('click', applyName);
-    confirmBtn.addEventListener('touchend', e => { e.preventDefault(); applyName(); }, { passive:false });
-
-    setTimeout(() => p1.focus(), 120);
-  })();
-
   const CONVERSATION = [
     { role:'user', text:'인터렉티브 홈페이지를 만들어줘. 가운데에 "KIMJEONGHWAN"이 크게 있고, 마우스를 움직이면 유리 렌즈가 따라다니는데 렌즈 안쪽에서만 "FOR THE CREATORS PREPARING THE FUTURE"가 피시아이 왜곡으로 보이는 효과를 원해. 필름 그레인, 마우스 패럴랙스도 넣어줘.' },
     { role:'claude', text:'index.html을 생성했어. SVG feDisplacementMap 기반의 유리 렌즈 왜곡, 필름 그레인 애니메이션(12프레임, 워밍 바이어스), 마우스 패럴랙스를 구현했어. 포트 9090에서 로컬 서버도 시작했어.' },
@@ -984,10 +962,11 @@
     function renderText() {
       tCtx.clearRect(0, 0, W, H);
       if (inverted) {
-        const lines = isPortrait ? nameParts : [nameParts.join(' ')];
-        const longestLine = lines.reduce((m,l) => l.length > m ? l.length : m, 1);
+        const parts = window.nameParts || ['KIM','JEONG','HWAN'];
+        const lines = isPortrait ? parts : [parts.join(' ')];
+        const longest = lines.reduce((m,l) => l.length > m ? l.length : m, 1);
         const fontSize = Math.min(isPortrait ? 120 : 100,
-          Math.max(22, Math.round(W * 0.82 / (longestLine * 0.70))));
+          Math.max(22, Math.round(W * 0.82 / (longest * 0.70))));
         tCtx.font = `800 ${fontSize}px Syne, sans-serif`;
         if ('letterSpacing' in tCtx) tCtx.letterSpacing = (fontSize * 0.08).toFixed(1) + 'px';
         tCtx.fillStyle = '#111111';
@@ -1015,6 +994,7 @@
       textReady = true;
     }
 
+    window.renderText = renderText;   /* expose globally for name change */
     document.fonts.ready.then(renderText);
     setTimeout(renderText, 100);
 
@@ -1203,6 +1183,79 @@
     });
 
   })();
+
+  /* ── Change Name modal ── */
+  (function() {
+    window.nameParts = ['KIM','JEONG','HWAN'];
+
+    const modal    = document.getElementById('nameModal');
+    const openBtn  = document.getElementById('changeNameBtn');
+    const p1       = document.getElementById('nmPart1');
+    const p2       = document.getElementById('nmPart2');
+    const p3       = document.getElementById('nmPart3');
+    const confirmBtn = document.getElementById('nameModalConfirm');
+
+    function openModal() {
+      p1.value = window.nameParts[0] === 'KIM'   ? '' : window.nameParts[0] || '';
+      p2.value = window.nameParts[1] === 'JEONG' ? '' : window.nameParts[1] || '';
+      p3.value = window.nameParts[2] === 'HWAN'  ? '' : window.nameParts[2] || '';
+      modal.classList.add('open');
+      requestAnimationFrame(() => { modal.classList.add('visible'); });
+      setTimeout(() => p1.focus(), 80);
+    }
+
+    function closeModal() {
+      modal.classList.remove('visible');
+      setTimeout(() => modal.classList.remove('open'), 350);
+    }
+
+    function applyName() {
+      const a  = (p1.value.trim().toUpperCase()) || 'KIM';
+      const b  = (p2.value.trim().toUpperCase()) || 'JEONG';
+      const cc = (p3.value.trim().toUpperCase()) || 'HWAN';
+      const parts = [a, b, cc].filter(s => s.length > 0);
+      window.nameParts = parts.length ? parts : ['KIM','JEONG','HWAN'];
+
+      /* Update DOM h1s */
+      const nameH = document.querySelector('.name-h');
+      const nameV = document.querySelector('.name-v');
+      const joined = window.nameParts.join(' ');
+
+      nameH.textContent = joined;
+      const pxH = Math.min(100, Math.max(22, Math.round(window.innerWidth * 0.82 / (joined.length * 0.70))));
+      nameH.style.fontSize = pxH + 'px';
+
+      nameV.innerHTML = window.nameParts.join('<br>');
+      const longest = Math.max(...window.nameParts.map(p => p.length));
+      const pxV = Math.min(120, Math.max(28, Math.round(window.innerWidth * 0.82 / (longest * 0.70))));
+      nameV.style.fontSize = pxV + 'px';
+
+      document.title = joined;
+
+      /* Re-render WebGL texture */
+      if (typeof renderText === 'function') renderText();
+
+      closeModal();
+    }
+
+    openBtn.addEventListener('click',    openModal);
+    openBtn.addEventListener('touchend', e => { e.preventDefault(); openModal(); }, { passive:false });
+
+    confirmBtn.addEventListener('click',    applyName);
+    confirmBtn.addEventListener('touchend', e => { e.preventDefault(); applyName(); }, { passive:false });
+
+    /* Enter advances fields */
+    p1.addEventListener('keydown', e => { if (e.key === 'Enter') p2.focus(); });
+    p2.addEventListener('keydown', e => { if (e.key === 'Enter') p3.focus(); });
+    p3.addEventListener('keydown', e => { if (e.key === 'Enter') applyName(); });
+
+    /* Tap outside modal inner to close */
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    /* Block lens touch passthrough */
+    modal.addEventListener('touchstart', e => { if (e.target === modal) e.preventDefault(); }, { passive:false });
+  })();
+
   </script>
 </body>
 </html>
