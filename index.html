@@ -965,8 +965,10 @@
         const parts = window.nameParts || ['KIM','JEONG','HWAN'];
         const lines = isPortrait ? parts : [parts.join(' ')];
         const longest = lines.reduce((m,l) => l.length > m ? l.length : m, 1);
-        const fontSize = Math.min(isPortrait ? 120 : 100,
-          Math.max(22, Math.round(W * 0.82 / (longest * 0.70))));
+        /* Match original CSS: portrait clamp(40,15vw,120) base=5ch, landscape clamp(22,6.4vw,100) base=12ch */
+        const fontSize = isPortrait
+          ? Math.min(120, Math.max(40, Math.round(W * 0.15 * 5 / longest)))
+          : Math.min(100, Math.max(22, Math.round(W * 0.064 * 12 / longest)));
         tCtx.font = `800 ${fontSize}px Syne, sans-serif`;
         if ('letterSpacing' in tCtx) tCtx.letterSpacing = (fontSize * 0.08).toFixed(1) + 'px';
         tCtx.fillStyle = '#111111';
@@ -1222,12 +1224,12 @@
       const joined = window.nameParts.join(' ');
 
       nameH.textContent = joined;
-      const pxH = Math.min(100, Math.max(22, Math.round(window.innerWidth * 0.82 / (joined.length * 0.70))));
+      const pxH = Math.min(100, Math.max(22, Math.round(window.innerWidth * 0.064 * 12 / joined.length)));
       nameH.style.fontSize = pxH + 'px';
 
       nameV.innerHTML = window.nameParts.join('<br>');
       const longest = Math.max(...window.nameParts.map(p => p.length));
-      const pxV = Math.min(120, Math.max(28, Math.round(window.innerWidth * 0.82 / (longest * 0.70))));
+      const pxV = Math.min(120, Math.max(40, Math.round(window.innerWidth * 0.15 * 5 / longest)));
       nameV.style.fontSize = pxV + 'px';
 
       document.title = joined;
