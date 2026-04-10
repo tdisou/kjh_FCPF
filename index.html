@@ -964,11 +964,21 @@
       if (inverted) {
         const parts = window.nameParts || ['KIM','JEONG','HWAN'];
         const lines = isPortrait ? parts : [parts.join(' ')];
-        const longest = lines.reduce((m,l) => l.length > m ? l.length : m, 1);
-        /* Match original CSS: portrait clamp(40,15vw,120) base=5ch, landscape clamp(22,6.4vw,100) base=12ch */
-        const fontSize = isPortrait
-          ? Math.min(120, Math.max(40, Math.round(W * 0.15 * 5 / longest)))
-          : Math.min(100, Math.max(22, Math.round(W * 0.064 * 12 / longest)));
+        /* Base size = same as CSS clamp */
+        const baseFS = isPortrait
+          ? Math.min(120, Math.max(40, Math.round(W * 0.15)))
+          : Math.min(100, Math.max(22, Math.round(W * 0.064)));
+        /* Scale down only if any line exceeds 88% of canvas width */
+        const maxW = W * 0.88;
+        const tCtxTmp = tCtx; /* use existing 2d ctx for measurement */
+        function measW(text, px) {
+          tCtxTmp.font = `800 ${px}px Syne, sans-serif`;
+          return tCtxTmp.measureText(text).width * 1.09;
+        }
+        const fontSize = lines.reduce((fs, line) => {
+          const w = measW(line, fs);
+          return w > maxW ? Math.max(22, Math.floor(fs * maxW / w)) : fs;
+        }, baseFS);
         tCtx.font = `800 ${fontSize}px Syne, sans-serif`;
         if ('letterSpacing' in tCtx) tCtx.letterSpacing = (fontSize * 0.08).toFixed(1) + 'px';
         tCtx.fillStyle = '#111111';
@@ -1211,6 +1221,15 @@
       setTimeout(() => modal.classList.remove('open'), 350);
     }
 
+    /* Measure text width with canvas, return font-size that fits maxW */
+    function fitPx(text, defaultPx, maxW) {
+      const cvs = document.createElement('canvas');
+      const c   = cvs.getContext('2d');
+      c.font = `800 ${defaultPx}px Syne, sans-serif`;
+      const w = c.measureText(text).width * 1.09; /* 1.09 ≈ letter-spacing 0.08em overhead */
+      return w > maxW ? Math.max(22, Math.floor(defaultPx * maxW / w)) : defaultPx;
+    }
+
     function applyName() {
       const a  = (p1.value.trim().toUpperCase()) || 'KIM';
       const b  = (p2.value.trim().toUpperCase()) || 'JEONG';
@@ -1218,25 +1237,26 @@
       const parts = [a, b, cc].filter(s => s.length > 0);
       window.nameParts = parts.length ? parts : ['KIM','JEONG','HWAN'];
 
-      /* Update DOM h1s */
-      const nameH = document.querySelector('.name-h');
-      const nameV = document.querySelector('.name-v');
-      const joined = window.nameParts.join(' ');
+      const vw = window.innerWidth;
+      const maxW = vw * 0.88;
 
-      nameH.textContent = joined;
-      const pxH = Math.min(100, Math.max(22, Math.round(window.innerWidth * 0.064 * 12 / joined.length)));
-      nameH.style.fontSize = pxH + 'px';
+      /* Landscape h1 — same base size as CSS clamp(22px, 6.4vw, 100px) */
+      const nameH    = document.querySelector('.name-h');
+      const joined   = window.nameParts.join(' ');
+      const baseH    = Math.min(100, Math.max(22, Math.round(vw * 0.064)));
+      nameH.textContent  = joined;
+      nameH.style.fontSize = fitPx(joined, baseH, maxW) + 'px';
+      nameH.style.whiteSpace = 'nowrap';
 
+      /* Portrait h1 — same base size as CSS clamp(40px, 15vw, 120px) */
+      const nameV  = document.querySelector('.name-v');
+      const baseV  = Math.min(120, Math.max(40, Math.round(vw * 0.15)));
+      const pxV    = Math.min(...window.nameParts.map(p => fitPx(p, baseV, maxW)));
       nameV.innerHTML = window.nameParts.join('<br>');
-      const longest = Math.max(...window.nameParts.map(p => p.length));
-      const pxV = Math.min(120, Math.max(40, Math.round(window.innerWidth * 0.15 * 5 / longest)));
       nameV.style.fontSize = pxV + 'px';
 
       document.title = joined;
-
-      /* Re-render WebGL texture */
-      if (typeof renderText === 'function') renderText();
-
+      if (window.renderText) window.renderText();
       closeModal();
     }
 
