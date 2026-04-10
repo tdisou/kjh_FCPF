@@ -508,8 +508,9 @@
     const W   = c.width, H = c.height;
     const TAU = Math.PI * 2;
 
-    /* ── Halftone grid ── */
-    const SP   = (window.innerHeight > window.innerWidth) ? 8 : 13;
+    /* ── Halftone grid (portrait mobile: dense 5px / desktop: 13px) ── */
+    const isPortraitMobile = window.innerHeight > window.innerWidth && window.innerWidth < 768;
+    const SP   = isPortraitMobile ? 5 : 13;
     const COLS = Math.ceil(W / SP) + 1;
     const ROWS = Math.ceil(H / SP) + 1;
 
@@ -600,7 +601,9 @@
         vctx.drawImage(vid, sx, sy, sw, sh, 0, 0, COLS, ROWS);
         vctx.restore();
 
-        const px = vctx.getImageData(0, 0, COLS, ROWS).data;
+        let px;
+        try { px = vctx.getImageData(0, 0, COLS, ROWS).data; }
+        catch(e) { t++; requestAnimationFrame(draw); return; }
 
         /* ── Halftone: single path for all dots ── */
         ctx.beginPath();
