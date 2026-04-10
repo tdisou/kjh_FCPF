@@ -132,6 +132,18 @@
     @media (orientation: portrait) {
       #modeSwitch { right:auto; left:50%; top:auto; bottom:36px; transform:translateX(-50%); }
     }
+    /* Soft backdrop behind modeSwitch */
+    #modeSwitch::before {
+      content:''; position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:90px; height:90px; border-radius:50%;
+      background:radial-gradient(circle, rgba(0,0,0,0.55) 0%, transparent 72%);
+      pointer-events:none; z-index:-1;
+      transition:background 0.5s ease;
+    }
+    body.inverted #modeSwitch::before {
+      background:radial-gradient(circle, rgba(255,255,255,0.65) 0%, transparent 72%);
+    }
     .switch-track {
       width:34px; height:19px; border-radius:10px;
       background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.28);
@@ -154,6 +166,18 @@
       cursor:pointer; -webkit-tap-highlight-color:transparent;
       transition:background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
       backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    }
+    /* Soft backdrop behind chatBtn */
+    #chatBtn::before {
+      content:''; position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:80px; height:80px; border-radius:50%;
+      background:radial-gradient(circle, rgba(0,0,0,0.50) 0%, transparent 72%);
+      pointer-events:none; z-index:-1;
+      transition:background 0.5s ease;
+    }
+    body.inverted #chatBtn::before {
+      background:radial-gradient(circle, rgba(255,255,255,0.60) 0%, transparent 72%);
     }
     #chatBtn:hover { background:rgba(255,255,255,0.18); transform:scale(1.05); }
     body.inverted #chatBtn { background:rgba(0,0,0,0.08); border-color:rgba(0,0,0,0.16); }
@@ -441,8 +465,6 @@
     { role:'user', text:'데스크탑 버전에서 렌즈 크기는 조금 더 작게 줄이고, FOR THE...문자 크기는 더 키워줘. 그리고 안의 FOR THE... 문자가 정확하게 KIMJEONGHWAN의 세로 중앙에 올 수 있도록 정확하게 보이도록 해줘' },
     { role:'claude', text:'렌즈 크기를 vmin * 0.18로 줄이고, 텍스트 fontsize를 W * 0.068로 키웠어. textBaseline을 alphabetic → middle로 변경하고 startY = H/2 - (lines.length-1)*lineH/2 공식으로 어떤 뷰포트에서도 정확히 수직 중앙에 배치되도록 수정했어.' },
 
-    { role:'date', text:'2026년 4월 10일' },
-
     { role:'user', text:'데스크탑 버전에서 FOR THE... 글자 크기 조금만 줄여줘.' },
     { role:'claude', text:'W * 0.095 → W * 0.078로 줄였어.' },
 
@@ -460,6 +482,18 @@
 
     { role:'user', text:'이 홈페이지를 만들기 위해 어떤 대화를 주고받았는지 채팅 기록처럼 말풍선으로 볼 수 있도록, 화면 상단의 메시지 아이콘을 누르면 대화 기록이 보이도록 해줘.' },
     { role:'claude', text:'지금 보고 있는 이 패널이 그 결과야. 😊 채팅 아이콘 버튼(우상단), 사이드 드로어(데스크탑), 바텀 시트(모바일)로 구현했어.' },
+
+    { role:'user', text:'배경이 너무 정적이라 그래픽 미디어아트 같은 모션이 있으면 좋겠어.' },
+    { role:'claude', text:'5가지 배경 스타일을 순서대로 시도했어. 사인파 라인 → 플로우 필드 파티클 → 별자리 → 리액션-디퓨전 → 간섭파 → 마블 베인 → 보로노이 → 오로라 블롭 → 플로우 필드 파티클 → 도트 그리드 → 리사주 피겨 웹.' },
+
+    { role:'user', text:'배경을 카메라로 실시간으로 인식해서 하프톤 VHS 그레인 느낌으로 보여주는 건 어때?' },
+    { role:'claude', text:'구현했어. 카메라 영상을 13px 격자로 샘플링해서 밝기에 따라 점 크기가 달라지는 할프톤, VHS 필름 그레인, CRT 스캔라인, 가끔 수평 띠가 밀리는 글리치 효과까지 넣었어.' },
+
+    { role:'user', text:'아이폰 사파리에서는 카메라 권한 팝업이 안 뜨는데?' },
+    { role:'claude', text:'iOS Safari는 getUserMedia를 유저 제스처 없이 페이지 로드에서 호출하면 막혀. 실제 DOM 버튼을 만들어서 탭 시 직접 권한 요청하도록 수정했어. HTTP 로컬 주소에서는 iOS가 카메라를 차단하기도 해서 GitHub Pages(HTTPS)로 배포 권장.' },
+
+    { role:'user', text:'GitHub Pages로 올려서 HTTPS 주소로 접근하니까 아이폰에서도 카메라 권한 팝업이 잘 떠.' },
+    { role:'claude', text:'배포 주소: https://tdisou.github.io/kjh_FCPF — GitHub Pages는 자동으로 HTTPS를 제공해서 iOS Safari의 카메라 보안 정책을 통과할 수 있어.' },
   ];
 
 
@@ -629,13 +663,7 @@
   (function buildChat() {
     const container = document.getElementById('chatMessages');
     CONVERSATION.forEach(msg => {
-      if (msg.role === 'date') {
-        const d = document.createElement('div');
-        d.className = 'date-divider';
-        d.textContent = msg.text;
-        container.appendChild(d);
-        return;
-      }
+      if (msg.role === 'date') return;
 
       const row = document.createElement('div');
       row.className = `msg-row ${msg.role}`;
