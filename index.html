@@ -11,6 +11,52 @@
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
+    /* ── Name prompt ── */
+    #namePrompt {
+      position:fixed; inset:0; z-index:200;
+      background:#080808;
+      display:flex; align-items:center; justify-content:center;
+      transition:opacity 0.7s ease;
+    }
+    #namePrompt.hidden { opacity:0; pointer-events:none; }
+    #namePromptInner {
+      text-align:center; display:flex; flex-direction:column;
+      align-items:center; gap:32px;
+    }
+    #nameLabel {
+      font-family:'Inter',sans-serif; font-weight:300;
+      font-size:10px; letter-spacing:0.22em;
+      color:rgba(255,255,255,0.28); text-transform:uppercase;
+    }
+    #nameFields {
+      display:flex; flex-direction:column; align-items:center; gap:18px;
+    }
+    .name-part {
+      font-family:'Syne',sans-serif; font-weight:800;
+      font-size: clamp(32px, 10vw, 88px);
+      letter-spacing:0.08em; text-transform:uppercase; text-align:center;
+      background:none; border:none;
+      border-bottom:1px solid rgba(255,255,255,0.15);
+      color:rgba(255,255,255,0.90);
+      width:72vw; max-width:560px;
+      outline:none; padding-bottom:6px;
+      caret-color:rgba(255,255,255,0.5);
+      transition:border-color 0.2s;
+    }
+    .name-part:focus { border-bottom-color:rgba(255,255,255,0.45); }
+    .name-part::placeholder { color:rgba(255,255,255,0.10); }
+    #nameConfirm {
+      background:none; border:1px solid rgba(255,255,255,0.20);
+      color:rgba(255,255,255,0.45);
+      font-family:'Inter',sans-serif; font-weight:300;
+      font-size:10px; letter-spacing:0.20em;
+      padding:12px 32px; border-radius:40px;
+      cursor:pointer; text-transform:uppercase;
+      transition:border-color 0.2s, color 0.2s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    #nameConfirm:hover { border-color:rgba(255,255,255,0.50); color:rgba(255,255,255,0.85); }
+
     @keyframes camPulse {
       0%,100% { transform:scale(1);   opacity:0.6; }
       50%      { transform:scale(1.12); opacity:1;   }
@@ -334,6 +380,25 @@
 </head>
 <body>
 
+  <!-- Name input prompt -->
+  <div id="namePrompt">
+    <div id="namePromptInner">
+      <div id="nameLabel">Enter your name</div>
+      <div id="nameFields">
+        <input class="name-part" id="namePart1" type="text" maxlength="12"
+               autocomplete="off" autocorrect="off" autocapitalize="characters"
+               spellcheck="false" placeholder="—">
+        <input class="name-part" id="namePart2" type="text" maxlength="12"
+               autocomplete="off" autocorrect="off" autocapitalize="characters"
+               spellcheck="false" placeholder="—">
+        <input class="name-part" id="namePart3" type="text" maxlength="12"
+               autocomplete="off" autocorrect="off" autocapitalize="characters"
+               spellcheck="false" placeholder="—">
+      </div>
+      <button id="nameConfirm">Continue</button>
+    </div>
+  </div>
+
   <div id="bg"></div>
   <canvas id="bgArt"></canvas>
 
@@ -407,6 +472,61 @@
   /* ─────────────────────────────────────────
      CONVERSATION DATA
   ───────────────────────────────────────── */
+  /* ── Global name parts (default = KIM / JEONG / HWAN) ── */
+  let nameParts = ['KIM', 'JEONG', 'HWAN'];
+  let userName  = 'KIMJEONGHWAN';
+
+  /* ── Name prompt logic ── */
+  (function() {
+    const promptEl = document.getElementById('namePrompt');
+    const p1 = document.getElementById('namePart1');
+    const p2 = document.getElementById('namePart2');
+    const p3 = document.getElementById('namePart3');
+    const confirmBtn = document.getElementById('nameConfirm');
+
+    function calcPx(parts) {
+      const longest = Math.max(...parts.map(p => p.length || 1));
+      return Math.min(Math.round(window.innerWidth * 0.72 / (longest * 0.68)), 88);
+    }
+
+    function applyName() {
+      const a = (p1.value.trim() || 'KIM').toUpperCase();
+      const b = (p2.value.trim() || 'JEONG').toUpperCase();
+      const cc= (p3.value.trim() || 'HWAN').toUpperCase();
+      nameParts = [a, b, cc].filter(s => s.length > 0);
+      if (!nameParts.length) nameParts = ['KIM', 'JEONG', 'HWAN'];
+      userName = nameParts.join(' ');
+
+      /* Update visible h1s */
+      const nameH = document.querySelector('.name-h');
+      const nameV = document.querySelector('.name-v');
+      const px = calcPx(nameParts);
+
+      nameH.textContent = nameParts.join(' ');
+      nameH.style.fontSize = Math.min(Math.round(window.innerWidth * 0.72 / (userName.length * 0.68)), 100) + 'px';
+      nameH.style.whiteSpace = 'nowrap';
+
+      nameV.innerHTML = nameParts.join('<br>');
+      nameV.style.fontSize = px + 'px';
+
+      document.title = userName;
+      if (typeof renderText === 'function') renderText();
+
+      promptEl.classList.add('hidden');
+      setTimeout(() => { promptEl.style.display = 'none'; }, 700);
+    }
+
+    /* Enter in each field advances to next or submits */
+    p1.addEventListener('keydown', e => { if (e.key === 'Enter') p2.focus(); });
+    p2.addEventListener('keydown', e => { if (e.key === 'Enter') p3.focus(); });
+    p3.addEventListener('keydown', e => { if (e.key === 'Enter') applyName(); });
+
+    confirmBtn.addEventListener('click', applyName);
+    confirmBtn.addEventListener('touchend', e => { e.preventDefault(); applyName(); }, { passive:false });
+
+    setTimeout(() => p1.focus(), 120);
+  })();
+
   const CONVERSATION = [
     { role:'user', text:'인터렉티브 홈페이지를 만들어줘. 가운데에 "KIMJEONGHWAN"이 크게 있고, 마우스를 움직이면 유리 렌즈가 따라다니는데 렌즈 안쪽에서만 "FOR THE CREATORS PREPARING THE FUTURE"가 피시아이 왜곡으로 보이는 효과를 원해. 필름 그레인, 마우스 패럴랙스도 넣어줘.' },
     { role:'claude', text:'index.html을 생성했어. SVG feDisplacementMap 기반의 유리 렌즈 왜곡, 필름 그레인 애니메이션(12프레임, 워밍 바이어스), 마우스 패럴랙스를 구현했어. 포트 9090에서 로컬 서버도 시작했어.' },
@@ -864,10 +984,10 @@
     function renderText() {
       tCtx.clearRect(0, 0, W, H);
       if (inverted) {
-        const lines = isPortrait ? ['KIM', 'JEONG', 'HWAN'] : ['KIMJEONGHWAN'];
-        const fontSize = isPortrait
-          ? Math.min(120, Math.max(40, Math.round(W * 0.15)))
-          : Math.min(100, Math.max(22, Math.round(W * 0.064)));
+        const lines = isPortrait ? nameParts : [nameParts.join(' ')];
+        const longestLine = lines.reduce((m,l) => l.length > m ? l.length : m, 1);
+        const fontSize = Math.min(isPortrait ? 120 : 100,
+          Math.max(22, Math.round(W * 0.82 / (longestLine * 0.70))));
         tCtx.font = `800 ${fontSize}px Syne, sans-serif`;
         if ('letterSpacing' in tCtx) tCtx.letterSpacing = (fontSize * 0.08).toFixed(1) + 'px';
         tCtx.fillStyle = '#111111';
