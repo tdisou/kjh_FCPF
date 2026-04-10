@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>KIMJEONGHWAN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@800&family=Inter:wght@200;300&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    @keyframes camPulse {
+      0%,100% { transform:scale(1);   opacity:0.6; }
+      50%      { transform:scale(1.12); opacity:1;   }
+    }
+    #camRing { animation: camPulse 2s ease-in-out infinite; }
+
+    html, body {
+      width:100%; height:100%; height:100dvh;
+      background: #080808;
+      cursor: none;
+      overflow: hidden;
+      touch-action: none;
+      overscroll-behavior: none;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.5s ease;
+    }
+    body.inverted { background: #f0f0f0; }
+
+    #bg {
+      position:fixed; inset:0; z-index:0;
+      background: radial-gradient(ellipse 130% 130% at 50% 50%, #0d0d11 0%, #050506 100%);
+      transition: background 0.5s ease;
+    }
+    body.inverted #bg { background: #f0f0f0; }
+
+    /* ── Layer 1: KIMJEONGHWAN (dark mode) ── */
+    #layerMain {
+      position:fixed; inset:0; z-index:1;
+      display:flex; align-items:center; justify-content:center;
+      pointer-events:none;
+      opacity:1; transition: opacity 0.5s ease;
+    }
+    body.inverted #layerMain { opacity:0; }
+
+    .name {
+      font-family:'Syne',sans-serif; font-weight:800;
+      letter-spacing:0.08em; color:rgba(255,255,255,0.90);
+      text-transform:uppercase; user-select:none;
+    }
+    @media (orientation: landscape) {
+      .name-v { display:none; }
+      .name-h { font-size: clamp(22px, 6.4vw, 100px); white-space:nowrap; }
+    }
+    @media (orientation: portrait) {
+      .name-h { display:none; }
+      .name-v { font-size: clamp(40px, 15vw, 120px); line-height:1.05; text-align:center; letter-spacing:0.06em; }
+    }
+
+    /* ── Layer 1b: FOR THE CREATORS (inverted mode) ── */
+    #layerAlt {
+      position:fixed; inset:0; z-index:1;
+      display:flex; align-items:center; justify-content:center;
+      pointer-events:none;
+      opacity:0; transition: opacity 0.5s ease;
+    }
+    body.inverted #layerAlt { opacity:1; }
+
+    .alt-text {
+      font-family:'Inter',sans-serif; font-weight:200;
+      letter-spacing:0.08em; color:rgba(0,0,0,0.82);
+      text-transform:uppercase; text-align:center;
+      user-select:none; line-height:1.15;
+    }
+    @media (orientation: landscape) {
+      .alt-v { display:none; }
+      .alt-h { font-size: clamp(16px, 3.2vw, 50px); white-space:nowrap; }
+    }
+    @media (orientation: portrait) {
+      .alt-h { display:none; }
+      .alt-v { font-size: clamp(27px, 10vw, 74px); line-height:1.2; }
+    }
+
+    /* ── Generative background art ── */
+    #bgArt {
+      position:fixed; inset:0; z-index:0;
+      pointer-events:none;
+    }
+
+    /* ── Film grain ── */
+    #grain {
+      position:fixed; inset:0; z-index:2;
+      opacity:0.10; mix-blend-mode:overlay; pointer-events:none;
+      transition: opacity 0.5s ease;
+    }
+    body.inverted #grain { opacity:0.04; mix-blend-mode:multiply; }
+
+    /* ── WebGL lens canvas ── */
+    #lensCanvas {
+      position:fixed; top:0; left:0; border-radius:50%;
+      pointer-events:none; z-index:5; will-change:left,top;
+      opacity:0; transition:opacity 0.4s cubic-bezier(0.22,1,0.36,1);
+    }
+    body.lens-on #lensCanvas { opacity:1; }
+
+    /* ── Glass lens visual ── */
+    #lens {
+      position:fixed; top:0; left:0; border-radius:50%;
+      pointer-events:none; z-index:20; will-change:left,top;
+      background: radial-gradient(circle at 40% 36%, rgba(255,255,255,0.020) 0%, rgba(255,255,255,0.004) 55%, rgba(0,0,0,0.035) 100%);
+      border: 1px solid rgba(200,218,242,0.34);
+      box-shadow: 9px 18px 52px rgba(0,0,0,0.44), 5px 9px 22px rgba(0,0,0,0.24),
+        inset 0 1.5px 4px rgba(255,255,255,0.08), inset 0 -1.5px 4px rgba(0,0,0,0.12);
+      opacity:0;
+      transition:opacity 0.4s cubic-bezier(0.22,1,0.36,1), background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+    body.lens-on #lens { opacity:1; }
+    body.inverted #lens {
+      background: radial-gradient(circle at 40% 36%, rgba(0,0,0,0.012) 0%, rgba(0,0,0,0.004) 55%, rgba(255,255,255,0.04) 100%);
+      border: 1px solid rgba(0,0,0,0.18);
+      box-shadow: 9px 18px 52px rgba(0,0,0,0.14), 5px 9px 22px rgba(0,0,0,0.08),
+        inset 0 1.5px 4px rgba(255,255,255,0.6), inset 0 -1.5px 4px rgba(0,0,0,0.04);
+    }
+
+    /* ── Mode toggle switch ── */
+    #modeSwitch {
+      position:fixed; right:24px; top:50%; transform:translateY(-50%);
+      z-index:50; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    }
+    @media (orientation: portrait) {
+      #modeSwitch { right:auto; left:50%; top:auto; bottom:36px; transform:translateX(-50%); }
+    }
+    .switch-track {
+      width:34px; height:19px; border-radius:10px;
+      background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.28);
+      position:relative; transition:background 0.4s ease, border-color 0.4s ease;
+    }
+    body.inverted .switch-track { background:rgba(0,0,0,0.12); border-color:rgba(0,0,0,0.20); }
+    .switch-thumb {
+      position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%;
+      background:rgba(255,255,255,0.75);
+      transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), background 0.4s ease;
+    }
+    body.inverted .switch-thumb { transform:translateX(15px); background:rgba(0,0,0,0.55); }
+
+    /* ── Chat icon button ── */
+    #chatBtn {
+      position:fixed; top:22px; right:22px; z-index:60;
+      width:36px; height:36px; border-radius:50%;
+      background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.20);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; -webkit-tap-highlight-color:transparent;
+      transition:background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    }
+    #chatBtn:hover { background:rgba(255,255,255,0.18); transform:scale(1.05); }
+    body.inverted #chatBtn { background:rgba(0,0,0,0.08); border-color:rgba(0,0,0,0.16); }
+    body.inverted #chatBtn:hover { background:rgba(0,0,0,0.14); }
+    #chatBtn svg { width:16px; height:16px; color:rgba(255,255,255,0.75); }
+    body.inverted #chatBtn svg { color:rgba(0,0,0,0.6); }
+
+    /* ── Chat panel ── */
+    #chatBackdrop {
+      position:fixed; inset:0; z-index:70;
+      background:rgba(0,0,0,0.45);
+      opacity:0; pointer-events:none;
+      transition:opacity 0.35s ease;
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+    }
+    body.chat-open #chatBackdrop { opacity:1; pointer-events:all; }
+
+    #chatPanel {
+      position:fixed; top:0; right:0; bottom:0; z-index:80;
+      width:400px; max-width:100vw;
+      background:#fafafa;
+      display:flex; flex-direction:column;
+      transform:translateX(100%);
+      transition:transform 0.4s cubic-bezier(0.22,1,0.36,1);
+      box-shadow:-12px 0 60px rgba(0,0,0,0.2);
+    }
+    body.chat-open #chatPanel { transform:translateX(0); }
+
+    @media (max-width: 600px), (orientation: portrait) {
+      #chatPanel {
+        top:auto; right:0; left:0; bottom:0;
+        width:100%; height:90dvh;
+        border-radius:20px 20px 0 0;
+        transform:translateY(100%);
+        box-shadow:0 -12px 60px rgba(0,0,0,0.2);
+      }
+      body.chat-open #chatPanel { transform:translateY(0); }
+    }
+
+    /* Panel header */
+    #chatHeader {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:20px 24px 16px;
+      border-bottom:1px solid rgba(0,0,0,0.08);
+      flex-shrink:0;
+    }
+    #chatHeader .panel-drag {
+      display:none;
+      width:36px; height:4px; border-radius:2px;
+      background:rgba(0,0,0,0.18); margin:0 auto 14px;
+    }
+    @media (max-width: 600px), (orientation: portrait) {
+      #chatHeader { flex-direction:column; align-items:stretch; padding-top:14px; }
+      #chatHeader .panel-drag { display:block; }
+      #chatHeader .header-row { display:flex; align-items:center; justify-content:space-between; }
+    }
+    .header-row { display:flex; align-items:center; justify-content:space-between; width:100%; }
+    #chatHeader h2 {
+      font-family:'Inter',sans-serif; font-weight:300;
+      font-size:13px; letter-spacing:0.10em; text-transform:uppercase;
+      color:#111;
+    }
+    #chatClose {
+      width:28px; height:28px; border-radius:50%; border:none;
+      background:rgba(0,0,0,0.07); color:#555;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:14px; line-height:1;
+      transition:background 0.2s; flex-shrink:0;
+    }
+    #chatClose:hover { background:rgba(0,0,0,0.13); }
+
+    /* Messages area */
+    #chatMessages {
+      flex:1; overflow-y:auto; padding:24px 20px;
+      display:flex; flex-direction:column; gap:16px;
+      overscroll-behavior:contain;
+    }
+    #chatMessages::-webkit-scrollbar { width:4px; }
+    #chatMessages::-webkit-scrollbar-track { background:transparent; }
+    #chatMessages::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15); border-radius:2px; }
+
+    /* Message rows */
+    .msg-row { display:flex; flex-direction:column; gap:4px; }
+    .msg-row.user { align-items:flex-end; }
+    .msg-row.claude { align-items:flex-start; }
+
+    .msg-label {
+      font-size:10px; letter-spacing:0.08em; text-transform:uppercase;
+      color:#aaa; padding:0 6px;
+    }
+
+    .bubble {
+      max-width:82%; padding:11px 15px;
+      border-radius:16px; font-size:13px; line-height:1.55;
+      font-family:'Inter',sans-serif; font-weight:300;
+    }
+    .msg-row.user .bubble {
+      background:#111; color:#f0f0f0;
+      border-bottom-right-radius:4px;
+    }
+    .msg-row.claude .bubble {
+      background:#ececec; color:#111;
+      border-bottom-left-radius:4px;
+    }
+
+    /* Image bubble */
+    .bubble-img {
+      max-width:82%; border-radius:14px; overflow:hidden;
+      border:1px solid rgba(0,0,0,0.08);
+    }
+    .bubble-img img {
+      width:100%; display:block;
+    }
+    .bubble-img .img-caption {
+      font-size:11px; color:#888; padding:8px 12px;
+      background:#f4f4f4; font-family:'Inter',sans-serif; font-weight:300;
+      border-top:1px solid rgba(0,0,0,0.06);
+    }
+
+    /* Image placeholder */
+    .img-placeholder {
+      width:100%; aspect-ratio:9/16; background:#e8e8e8;
+      display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:8px;
+    }
+    .img-placeholder svg { opacity:0.3; }
+    .img-placeholder span { font-size:11px; color:#999; font-family:'Inter',sans-serif; }
+
+    /* ── Near-UI: hide lens, show circle cursor ── */
+    body.near-ui #lensCanvas,
+    body.near-ui #lens { opacity:0 !important; }
+
+    /* ── Chat cursor / touch indicator ── */
+    #chatCursor {
+      position:fixed; z-index:200;
+      width:22px; height:22px; border-radius:50%;
+      background:rgba(120,120,120,0.25);
+      border:1px solid rgba(120,120,120,0.18);
+      pointer-events:none;
+      transform:translate(-50%,-50%);
+      opacity:0;
+      transition:opacity 0.18s ease;
+    }
+    body.chat-cursor-on #chatCursor { opacity:1; }
+
+    /* Date divider */
+    .date-divider {
+      text-align:center; font-size:10px; letter-spacing:0.1em;
+      text-transform:uppercase; color:#bbb;
+      font-family:'Inter',sans-serif; font-weight:300;
+      padding:4px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="bg"></div>
+  <canvas id="bgArt"></canvas>
+
+  <!-- Camera permission prompt (shown until camera granted) -->
+  <div id="camPrompt" style="
+    display:none; position:fixed; inset:0; z-index:4;
+    align-items:center; justify-content:center; flex-direction:column; gap:20px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+  ">
+    <div id="camRing" style="
+      width:64px; height:64px; border-radius:50%;
+      border:1.5px solid rgba(180,182,220,0.5);
+      display:flex; align-items:center; justify-content:center;
+    ">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="rgba(180,182,220,0.75)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
+    <span style="font:500 10px/1 'Inter',sans-serif; letter-spacing:0.14em; color:rgba(180,182,220,0.65);">TAP TO ENABLE CAMERA</span>
+  </div>
+
+  <div id="layerMain">
+    <h1 class="name name-h">KIMJEONGHWAN</h1>
+    <h1 class="name name-v">KIM<br>JEONG<br>HWAN</h1>
+  </div>
+
+  <div id="layerAlt">
+    <div class="alt-text alt-h">FOR THE CREATORS<br>PREPARING THE FUTURE</div>
+    <div class="alt-text alt-v">FOR THE<br>CREATORS<br>PREPARING<br>THE FUTURE</div>
+  </div>
+
+  <canvas id="grain"></canvas>
+  <canvas id="lensCanvas"></canvas>
+  <div id="lens"></div>
+
+  <!-- Mode toggle switch -->
+  <div id="modeSwitch">
+    <div class="switch-track" id="switchTrack">
+      <div class="switch-thumb" id="switchThumb"></div>
+    </div>
+  </div>
+
+  <!-- Chat icon button -->
+  <div id="chatBtn" title="제작 과정 보기">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+    </svg>
+  </div>
+
+  <!-- Chat cursor indicator -->
+  <div id="chatCursor"></div>
+
+  <!-- Chat backdrop -->
+  <div id="chatBackdrop"></div>
+
+  <!-- Chat panel -->
+  <div id="chatPanel">
+    <div id="chatHeader">
+      <div class="panel-drag"></div>
+      <div class="header-row">
+        <h2>제작 과정 — How it was built</h2>
+        <button id="chatClose">✕</button>
+      </div>
+    </div>
+    <div id="chatMessages"></div>
+  </div>
+
+
+  <script>
+  /* ─────────────────────────────────────────
+     CONVERSATION DATA
+  ───────────────────────────────────────── */
+  const CONVERSATION = [
+    { role:'user', text:'인터렉티브 홈페이지를 만들어줘. 가운데에 "KIMJEONGHWAN"이 크게 있고, 마우스를 움직이면 유리 렌즈가 따라다니는데 렌즈 안쪽에서만 "FOR THE CREATORS PREPARING THE FUTURE"가 피시아이 왜곡으로 보이는 효과를 원해. 필름 그레인, 마우스 패럴랙스도 넣어줘.' },
+    { role:'claude', text:'index.html을 생성했어. SVG feDisplacementMap 기반의 유리 렌즈 왜곡, 필름 그레인 애니메이션(12프레임, 워밍 바이어스), 마우스 패럴랙스를 구현했어. 포트 9090에서 로컬 서버도 시작했어.' },
+
+    { role:'user', text:'왜곡효과가 아예 사라져버렸어.' },
+    { role:'claude', text:'SVG feDisplacementMap을 수정해서 왜곡 강도를 복구했어. feImage의 data URL 방식으로 변경해서 Chrome에서도 동작하도록 고쳤어.' },
+
+    { role:'user', text:'왜곡은 잘 되는것 확인했어. 렌즈 한쪽으로 한겹정도 공백이 있는데 이 여백 없이 렌즈 안쪽에 왜곡되는 문자가 바로 보일 수 있게 조정할 수 있을까?' },
+    { role:'claude', text:'outward barrel 공식이 렌즈 경계 밖을 샘플링해서 투명 픽셀이 생기는 문제였어. inward barrel 공식(dp = -(nx/len)*disp)으로 바꿔서 여백 없이 렌즈 안쪽에 바로 왜곡된 텍스트가 나오도록 고쳤어.' },
+
+    { role:'user', text:'여백은 없어졌는데 텍스트가 나오는 방식은 이전이 맞아. 지금은 한꺼번에 모든 텍스트가 나오고 있어서 이 방향성이 아님.' },
+    { role:'claude', text:'텍스트를 렌즈 크기가 아닌 뷰포트 전체 크기 기준으로 렌더링하도록 수정했어. 렌즈가 뷰포트의 한 부분만 잘라서 보여주는 방식으로 복구해서, 커서 위치에 따라 다른 글자가 드러나는 효과가 다시 작동해.' },
+
+    { role:'user', text:'아직도 큰데..왜곡 느낌은 너무 좋은데 글자가 안보여....' },
+    { role:'claude', text:'폰트 사이즈를 줄이고 왜곡 강도(K값)를 조정했어. 렌즈 반지름 대비 텍스트 비율을 낮춰서 글자가 렌즈 안에서 더 잘 보이도록 했어.' },
+
+    { role:'user', text:'문자가 조금 더 보이기 시작했어. 왜곡 되는 정도를 지금보다 살짝만 약하게 할 수 있을까? 왜곡 느낌은 지금 그대로가 좋아.' },
+    { role:'claude', text:'FISHEYE_K를 0.72 → 0.65로 줄였어. 왜곡 느낌은 유지하면서 텍스트 가독성을 조금 더 높였어.' },
+
+    { role:'user', text:'폰에서도 볼수있게 링크로 줘.' },
+    { role:'claude', text:'같은 WiFi에서 192.168.0.73:9090으로 접속 가능해. 파이썬 HTTP 서버를 0.0.0.0으로 바인딩해서 내부 네트워크에서 접근할 수 있게 했어.' },
+
+    { role:'user', text:'지금 폰에서도 볼수있는거 맞아? 폰에서는 렌즈에 아무것도 안비치는데 데스크탑이랑 설정이 다른건가?' },
+    { role:'claude', text:'SVG filter에서 feImage data URL 방식이 모바일 Safari에서 동작하지 않는 문제야. iOS에서는 CSS filter 안의 SVG feImage가 제한적으로 지원돼. 해결 방법을 찾아볼게.' },
+
+    { role:'user', text:'이전에 왜곡되는게 좋았는데 왜 없애? 왜곡되는 효과가 사라졌잖아. 다시 롤백해줘' },
+    { role:'claude', text:'이전 버전으로 롤백했어. SVG feDisplacementMap 방식으로 돌아갔어. 모바일 Safari 호환성 문제는 완전히 다른 접근이 필요해 — WebGL로 전면 재작성하는 방향을 검토할게.' },
+
+    { role:'user', text:'데스크탑에서 보이는 왜곡 효과가 휴대폰에서는 전혀 안보이는데? 완전 동일한 콘텐츠가 되도록 해줘.' },
+    { role:'claude', text:'SVG feDisplacementMap 방식은 모바일 Safari에서 근본적으로 동작하지 않아. WebGL로 완전히 재작성했어. GLSL 프래그먼트 셰이더로 barrel distortion + chromatic aberration을 직접 구현했고, 이제 iOS Safari와 데스크탑 Chrome 모두에서 동일하게 동작해.' },
+
+    { role:'user', text:'렌즈 안으로 비치는 글자인 FOR THE... 이 문자가 휴대폰 비율(9:16)로 봤을때는 세로로 줄지어 나오도록, 데스크탑으로 봤을때는 가로로 길게 문자가 나오도록 바꿀 수 있을까?' },
+    { role:'claude', text:'orientation 감지를 추가했어. portrait 모드에서는 ["FOR THE", "CREATORS", "PREPARING", "THE FUTURE"] 4줄로, landscape 모드에서는 ["FOR THE CREATORS", "PREPARING THE FUTURE"] 2줄로 렌더링해.' },
+
+    { role:'user', text:'커서가 움직이는 대로 글자가 보였으면 좋겠는데 지금은 반대로 움직이고 있는 느낌이 들어.' },
+    { role:'claude', text:'WebGL Y축 반전 버그였어. UNPACK_FLIP_Y_WEBGL=true + uCenter.y = 1.0 - cy/H + dp.y positive sign 조합으로 수정했어. 이제 커서 방향과 텍스트 드러남 방향이 정확하게 일치해.' },
+
+    { role:'user', text:'데스크탑이랑 모바일 둘다 y 방향이 반대로 되는 중이야' },
+    { role:'claude', text:'세 곳의 Y 부호를 동시에 잘못 조정해서 net Y inversion이 발생했어. uCenter.y를 cy/H로 바꿨던 것을 1.0-cy/H로 되돌리고, dp.y sign만 positive로 유지해서 두 플랫폼 모두 올바른 방향으로 수정했어.' },
+
+    { role:'user', text:'휴대폰에서는 세로로 KIM / JEONG / HWAN 이렇게 보였으면 좋겠어. 그리고 렌즈가 조금 더 커졌으면 좋겠어.' },
+    { role:'claude', text:'KIMJEONGHWAN h1 태그를 portrait용 name-v(KIM/JEONG/HWAN 3줄)와 landscape용 name-h(한 줄) 두 개로 분리해서 CSS orientation 미디어쿼리로 전환하도록 수정했어. 렌즈 크기도 vmin 기준으로 키웠어.' },
+
+    { role:'user', text:'호버되는 중앙이 아니라 휴대폰에서 손가락을 올리는 위치의 살짝 상단에 렌즈가 생기면 좋겠어. 손가락에 가려지는게 아쉬워서.' },
+    { role:'claude', text:'TOUCH_Y_OFFSET = -(LENS_R + 18)을 추가해서 터치 지점 위로 렌즈가 뜨도록 했어.' },
+
+    { role:'user', text:'데스크탑 버전에도 같은 적용으로 업데이트' },
+    { role:'claude', text:'mousemove 이벤트에도 동일한 TOUCH_Y_OFFSET을 적용해서 데스크탑에서도 커서 위로 렌즈가 떠서 보이도록 수정했어.' },
+
+    { role:'user', text:'렌즈 왜곡효과 좋은데 렌즈 안쪽에 기본적으로 보이는 무지개색 작은 곡선과 하이라이트 같은 작은 하얀색 점은 안보였으면 좋겠어.' },
+    { role:'claude', text:'CSS의 rainbow rim gradient와 highlight glare (radial-gradient white dot)를 제거했어. border와 미세한 inner shadow만 남기고 렌즈를 더 클린하게 만들었어.' },
+
+    { role:'user', text:'빼달라는것도 빼줘' },
+    { role:'claude', text:'cursor dot(작은 원형 커서)도 완전히 제거했어. cursor:none으로 기본 커서도 숨기고, 커스텀 dot 요소도 HTML에서 삭제했어.' },
+
+    { role:'user', text:'데스크탑 버전에서 렌즈 크기는 조금 더 작게 줄이고, FOR THE...문자 크기는 더 키워줘. 그리고 안의 FOR THE... 문자가 정확하게 KIMJEONGHWAN의 세로 중앙에 올 수 있도록 정확하게 보이도록 해줘' },
+    { role:'claude', text:'렌즈 크기를 vmin * 0.18로 줄이고, 텍스트 fontsize를 W * 0.068로 키웠어. textBaseline을 alphabetic → middle로 변경하고 startY = H/2 - (lines.length-1)*lineH/2 공식으로 어떤 뷰포트에서도 정확히 수직 중앙에 배치되도록 수정했어.' },
+
+    { role:'date', text:'2026년 4월 10일' },
+
+    { role:'user', text:'데스크탑 버전에서 FOR THE... 글자 크기 조금만 줄여줘.' },
+    { role:'claude', text:'W * 0.095 → W * 0.078로 줄였어.' },
+
+    { role:'user', text:'살짝만 더 줄여줘. 데스크탑 버전만' },
+    { role:'claude', text:'W * 0.078 → W * 0.068 (최대 110px)으로 줄였어.' },
+
+    { role:'user', text:'화면 오른쪽에 스위치를 하나 추가해서, 스위치를 누르면 화면이 흰 배경에 검은 글자로 바뀌면서 렌즈 안의 FOR THE...가 바깥으로 나오고 KIMJEONGHWAN이 렌즈 안쪽으로 들어가게 반대로 되면 재미있을 것 같아. 스위치는 미니멀한 디자인이고 껐다가 켰다가 할 수 있게. 데스크탑이랑 휴대폰 버전 모두에게 적용.' },
+    { role:'claude', text:'다크/라이트 모드 토글 스위치를 추가했어. 다크 모드: 검은 배경 + KIMJEONGHWAN 표시, 렌즈 안 FOR THE CREATORS. 라이트 모드: 흰 배경 + FOR THE CREATORS 표시, 렌즈 안 KIMJEONGHWAN (Syne 800, 검은색). WebGL texture를 모드에 따라 재렌더링해.' },
+
+    { role:'user', text:'휴대폰버전은 스위치가 아래에 달려있도록 수정해줘.' },
+    { role:'claude', text:'portrait 미디어쿼리에서 #modeSwitch를 bottom:36px, left:50% 중앙 하단으로 이동시켰어.' },
+
+    { role:'user', text:'휴대폰 버전에서 렌즈 안쪽으로 보이는 FOR THE... 이거 크기를 살짝 크게 수정' },
+    { role:'claude', text:'portrait 모드 렌즈 텍스트 fontSize를 LENS_R * 0.30 → LENS_R * 0.38로 키웠어.' },
+
+    { role:'user', text:'이 홈페이지를 만들기 위해 어떤 대화를 주고받았는지 채팅 기록처럼 말풍선으로 볼 수 있도록, 화면 상단의 메시지 아이콘을 누르면 대화 기록이 보이도록 해줘.' },
+    { role:'claude', text:'지금 보고 있는 이 패널이 그 결과야. 😊 채팅 아이콘 버튼(우상단), 사이드 드로어(데스크탑), 바텀 시트(모바일)로 구현했어.' },
+  ];
+
+
+  /* ─────────────────────────────────────────
+     GENERATIVE BACKGROUND ART  — live camera halftone + VHS grain
+  ───────────────────────────────────────── */
+  (function() {
+    const c   = document.getElementById('bgArt');
+    const ctx = c.getContext('2d');
+    c.width   = window.innerWidth;
+    c.height  = window.innerHeight;
+    const W   = c.width, H = c.height;
+    const TAU = Math.PI * 2;
+
+    /* ── Halftone grid ── */
+    const SP   = 13;
+    const COLS = Math.ceil(W / SP) + 1;
+    const ROWS = Math.ceil(H / SP) + 1;
+
+    /* ── Tiny canvas for video sampling at grid resolution ── */
+    const vc   = document.createElement('canvas');
+    vc.width   = COLS; vc.height = ROWS;
+    const vctx = vc.getContext('2d', { willReadFrequently: true });
+
+    /* ── Small grain canvas (stretched to full screen) ── */
+    const gc   = document.createElement('canvas');
+    gc.width   = 220; gc.height = 150;
+    const gctx = gc.getContext('2d');
+    const gImg = gctx.createImageData(220, 150);
+    const gBuf = gImg.data;
+
+    /* ── Pre-baked CRT scan lines ── */
+    const sl   = document.createElement('canvas');
+    sl.width   = W; sl.height = H;
+    const slx  = sl.getContext('2d');
+    slx.fillStyle = 'rgba(0,0,0,0.06)';
+    for (let y = 0; y < H; y += 3) slx.fillRect(0, y, W, 1);
+
+    /* ── Video element ── */
+    const vid      = document.createElement('video');
+    vid.autoplay   = true; vid.playsInline = true; vid.muted = true;
+    let camReady   = false;
+    let camStarted = false;
+    const prompt   = document.getElementById('camPrompt');
+
+    function showPrompt() { prompt.style.display = 'flex'; }
+    function hidePrompt() { prompt.style.display = 'none'; }
+
+    function startCamera() {
+      if (camStarted) return;
+      camStarted = true;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showPrompt(); return;
+      }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+        .then(stream => {
+          hidePrompt();
+          vid.srcObject = stream;
+          vid.oncanplay = () => { camReady = true; };
+          vid.play().catch(() => {});
+        })
+        .catch(() => {
+          camStarted = false;   /* allow retry */
+          showPrompt();
+        });
+    }
+
+    /* Prompt tap → request camera (guaranteed user gesture on iOS) */
+    prompt.addEventListener('click', function() {
+      hidePrompt();
+      camStarted = false;
+      startCamera();
+    });
+    prompt.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      hidePrompt();
+      camStarted = false;
+      startCamera();
+    }, { passive: false });
+
+    /* Try immediately (works on desktop / Chrome) — show prompt if it fails */
+    showPrompt();   /* show by default, hide once camera granted */
+    startCamera();
+
+    let t = 0;
+    let lastInv = document.body.classList.contains('inverted');
+
+    function draw() {
+      const inv = document.body.classList.contains('inverted');
+      if (inv !== lastInv) { ctx.clearRect(0, 0, W, H); lastInv = inv; }
+      ctx.clearRect(0, 0, W, H);
+
+      if (camReady && vid.readyState >= 2) {
+        /* ── Mirror & cover-crop video → grid canvas ── */
+        const vw = vid.videoWidth, vh = vid.videoHeight;
+        const cAR = W / H, vAR = vw / vh;
+        let sx = 0, sy = 0, sw = vw, sh = vh;
+        if (vAR > cAR) { sw = sh * cAR; sx = (vw - sw) / 2; }
+        else            { sh = sw / cAR; sy = (vh - sh) / 2; }
+
+        vctx.save();
+        vctx.translate(COLS, 0);
+        vctx.scale(-1, 1);
+        vctx.drawImage(vid, sx, sy, sw, sh, 0, 0, COLS, ROWS);
+        vctx.restore();
+
+        const px = vctx.getImageData(0, 0, COLS, ROWS).data;
+
+        /* ── Halftone: single path for all dots ── */
+        ctx.beginPath();
+        for (let row = 0; row < ROWS; row++) {
+          for (let col = 0; col < COLS; col++) {
+            const i4  = (row * COLS + col) * 4;
+            const br  = (px[i4] * 0.299 + px[i4+1] * 0.587 + px[i4+2] * 0.114) / 255;
+            /* Dark bg: white dots large where bright; Light bg: dark dots large where dark */
+            const dotR = inv
+              ? SP * 0.44 * (1.0 - br)   /* light mode */
+              : SP * 0.44 * br;           /* dark mode  */
+            if (dotR > 0.5) {
+              const x = col * SP, y = row * SP;
+              ctx.moveTo(x + dotR, y);
+              ctx.arc(x, y, dotR, 0, TAU);
+            }
+          }
+        }
+        ctx.fillStyle = inv ? '#0b0b18' : '#d5d8ee';
+        ctx.fill();
+
+        /* ── Film grain ── */
+        for (let p = 0; p < gBuf.length; p += 4) {
+          const v  = (Math.random() * 210) | 0;
+          gBuf[p] = gBuf[p+1] = gBuf[p+2] = v;
+          gBuf[p+3] = (Math.random() * 32) | 0;
+        }
+        gctx.putImageData(gImg, 0, 0);
+        ctx.drawImage(gc, 0, 0, W, H);
+
+        /* ── CRT scan lines ── */
+        ctx.drawImage(sl, 0, 0);
+
+        /* ── VHS glitch: occasional horizontal strip shift ── */
+        if (Math.random() < 0.03) {
+          const gy = (Math.random() * H) | 0;
+          const gh = 2 + ((Math.random() * 7) | 0);
+          const gx = ((Math.random() - 0.5) * 55) | 0;
+          try {
+            const strip = ctx.getImageData(0, gy, W, gh);
+            ctx.putImageData(strip, gx, gy);
+          } catch(e) {}
+        }
+
+      } else {
+        ctx.clearRect(0, 0, W, H);
+      }
+
+      t++;
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  })();
+
+
+  /* ─────────────────────────────────────────
+     RENDER CHAT MESSAGES
+  ───────────────────────────────────────── */
+  (function buildChat() {
+    const container = document.getElementById('chatMessages');
+    CONVERSATION.forEach(msg => {
+      if (msg.role === 'date') {
+        const d = document.createElement('div');
+        d.className = 'date-divider';
+        d.textContent = msg.text;
+        container.appendChild(d);
+        return;
+      }
+
+      const row = document.createElement('div');
+      row.className = `msg-row ${msg.role}`;
+
+      const label = document.createElement('div');
+      label.className = 'msg-label';
+      label.textContent = msg.role === 'user' ? '나 (A)' : 'Claude Code';
+      row.appendChild(label);
+
+      // Image placeholder if message has image
+      if (msg.image) {
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'bubble-img';
+        imgWrap.innerHTML = `
+          <div class="img-placeholder">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span>스크린샷 공유됨</span>
+          </div>
+          <div class="img-caption">렌즈 한쪽 공백 확인 스크린샷</div>`;
+        row.appendChild(imgWrap);
+      }
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = msg.text;
+      row.appendChild(bubble);
+
+      container.appendChild(row);
+    });
+  })();
+
+
+  /* ─────────────────────────────────────────
+     CHAT PANEL OPEN / CLOSE
+  ───────────────────────────────────────── */
+  /* ── Chat cursor / touch indicator ── */
+  const chatCursor = document.getElementById('chatCursor');
+  function showChatCursor(x, y) {
+    chatCursor.style.left = x + 'px';
+    chatCursor.style.top  = y + 'px';
+    document.body.classList.add('chat-cursor-on');
+  }
+  function hideChatCursor() {
+    document.body.classList.remove('chat-cursor-on');
+  }
+  // Desktop only: near modeSwitch / chatBtn within radius → show circle instead of lens
+  // On mobile, skip entirely — iOS synthesizes mousemove after touch which would
+  // permanently set near-ui and hide the lensCanvas via opacity:0 !important
+  const isFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const UI_NEAR_RADIUS = 144; // px
+  const uiEls = ['modeSwitch', 'chatBtn'].map(id => document.getElementById(id));
+
+  function getElCenter(el) {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  document.addEventListener('mousemove', e => {
+    const cx = e.clientX, cy = e.clientY;
+    if (document.body.classList.contains('chat-open')) {
+      if (isFinePointer) showChatCursor(cx, cy);
+      return;
+    }
+    if (!isFinePointer) return; // touch device — ignore synthesized mouse events
+    const near = uiEls.some(el => {
+      const c = getElCenter(el);
+      const dx = cx - c.x, dy = cy - c.y;
+      return Math.sqrt(dx*dx + dy*dy) < UI_NEAR_RADIUS;
+    });
+    if (near) {
+      document.body.classList.add('near-ui');
+      showChatCursor(cx, cy);
+    } else {
+      document.body.classList.remove('near-ui');
+      hideChatCursor();
+    }
+  });
+  const chatPanelEl = document.getElementById('chatPanel');
+  chatPanelEl.addEventListener('touchstart', e => { const t=e.touches[0]; showChatCursor(t.clientX,t.clientY); }, { passive:true });
+  chatPanelEl.addEventListener('touchmove',  e => { const t=e.touches[0]; showChatCursor(t.clientX,t.clientY); }, { passive:true });
+  chatPanelEl.addEventListener('touchend',   hideChatCursor);
+  chatPanelEl.addEventListener('touchcancel',hideChatCursor);
+
+  document.getElementById('chatBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.body.classList.add('chat-open');
+    setTimeout(() => {
+      const msgs = document.getElementById('chatMessages');
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 420);
+  });
+  document.getElementById('chatClose').addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.body.classList.remove('chat-open');
+    hideChatCursor();
+  });
+  document.getElementById('chatBackdrop').addEventListener('click', function() {
+    document.body.classList.remove('chat-open');
+    hideChatCursor();
+  });
+  // Prevent panel clicks from closing
+  document.getElementById('chatPanel').addEventListener('click', e => e.stopPropagation());
+
+
+
+  /* ─────────────────────────────────────────
+     MAIN INTERACTIVE (WebGL lens + grain)
+  ───────────────────────────────────────── */
+  (function () {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    const vmin      = Math.min(W, H);
+    const isPortrait = H > W;
+    const LENS_R = Math.round(isPortrait
+      ? Math.max(85,  Math.min(155, vmin * 0.25))
+      : Math.max(110, Math.min(175, vmin * 0.18)));
+    const LENS_D = LENS_R * 2;
+    const FISHEYE_K = 0.65;
+
+    const lensCanvas = document.getElementById('lensCanvas');
+    lensCanvas.width  = LENS_D;
+    lensCanvas.height = LENS_D;
+
+    const lensEl = document.getElementById('lens');
+    lensEl.style.width = lensEl.style.height = LENS_D + 'px';
+
+    const gl = lensCanvas.getContext('webgl', { alpha:true, premultipliedAlpha:false })
+            || lensCanvas.getContext('experimental-webgl', { alpha:true, premultipliedAlpha:false });
+
+    const VS = `
+      attribute vec2 aPos; varying vec2 vUV;
+      void main() { vUV = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+    const FS = `
+      precision mediump float;
+      uniform sampler2D uTex; uniform vec2 uCenter;
+      uniform float uRx, uRy, uK; varying vec2 vUV;
+      vec4 samp(vec2 uv) { return texture2D(uTex, clamp(uv, 0.0, 1.0)); }
+      void main() {
+        vec2 p = vUV * 2.0 - 1.0; float r = length(p);
+        if (r >= 1.0) discard;
+        float f = 1.0 - uK * r * r; vec2 dp = p * f;
+        float ca = 0.028 * r * r;
+        vec2 dpR = p * (f + ca); vec2 dpB = p * (f - ca);
+        vec2 uvC = vec2(uCenter.x + dp.x  * uRx, uCenter.y + dp.y  * uRy);
+        vec2 uvR = vec2(uCenter.x + dpR.x * uRx, uCenter.y + dpR.y * uRy);
+        vec2 uvB = vec2(uCenter.x + dpB.x * uRx, uCenter.y + dpB.y * uRy);
+        gl_FragColor = vec4(samp(uvR).r, samp(uvC).g, samp(uvB).b, samp(uvC).a);
+      }`;
+
+    function makeShader(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src); gl.compileShader(s); return s;
+    }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog); gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(prog, 'aPos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uTex'), 0);
+    gl.uniform1f(gl.getUniformLocation(prog, 'uK'),  FISHEYE_K);
+    gl.uniform1f(gl.getUniformLocation(prog, 'uRx'), LENS_R / W);
+    gl.uniform1f(gl.getUniformLocation(prog, 'uRy'), LENS_R / H);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    const uCenter = gl.getUniformLocation(prog, 'uCenter');
+
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    const textCanvas = document.createElement('canvas');
+    textCanvas.width = W; textCanvas.height = H;
+    const tCtx = textCanvas.getContext('2d');
+
+    let textReady = false;
+    let inverted  = false;
+
+    function renderText() {
+      tCtx.clearRect(0, 0, W, H);
+      if (inverted) {
+        const lines = isPortrait ? ['KIM', 'JEONG', 'HWAN'] : ['KIMJEONGHWAN'];
+        const fontSize = isPortrait
+          ? Math.min(120, Math.max(40, Math.round(W * 0.15)))
+          : Math.min(100, Math.max(22, Math.round(W * 0.064)));
+        tCtx.font = `800 ${fontSize}px Syne, sans-serif`;
+        if ('letterSpacing' in tCtx) tCtx.letterSpacing = (fontSize * 0.08).toFixed(1) + 'px';
+        tCtx.fillStyle = '#111111';
+        tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
+        const lineH = fontSize * 1.05;
+        const startY = H / 2 - ((lines.length - 1) * lineH) / 2;
+        lines.forEach((line, i) => tCtx.fillText(line, W / 2, startY + i * lineH));
+      } else {
+        const lines = isPortrait
+          ? ['FOR THE', 'CREATORS', 'PREPARING', 'THE FUTURE']
+          : ['FOR THE CREATORS', 'PREPARING THE FUTURE'];
+        const fontSize = isPortrait
+          ? Math.max(20, Math.round(LENS_R * 0.38))
+          : Math.min(82, Math.max(20, Math.round(W * 0.050)));
+        tCtx.font = `200 ${fontSize}px Inter, sans-serif`;
+        if ('letterSpacing' in tCtx) tCtx.letterSpacing = (fontSize * 0.04).toFixed(1) + 'px';
+        tCtx.fillStyle = '#ffffff';
+        tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
+        const lineH = fontSize * 1.12;
+        const startY = H / 2 - ((lines.length - 1) * lineH) / 2;
+        lines.forEach((line, i) => tCtx.fillText(line, W / 2, startY + i * lineH));
+      }
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textCanvas);
+      textReady = true;
+    }
+
+    document.fonts.ready.then(renderText);
+    setTimeout(renderText, 100);
+
+    function drawLens(cx, cy) {
+      if (!textReady) return;
+      gl.viewport(0, 0, LENS_D, LENS_D);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform2f(uCenter, cx / W, 1.0 - cy / H);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    /* ── Film grain ── */
+    const GRAIN_FRAMES = 12, GRAIN_PAD = 36;
+    const grainEl = document.getElementById('grain');
+    grainEl.width = W; grainEl.height = H;
+    const gCtx = grainEl.getContext('2d');
+    const grainFrames = [];
+    for (let f = 0; f < GRAIN_FRAMES; f++) {
+      const fc = document.createElement('canvas');
+      fc.width = W + GRAIN_PAD*2; fc.height = H + GRAIN_PAD*2;
+      const fctx = fc.getContext('2d');
+      const img = fctx.createImageData(fc.width, fc.height);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const v = Math.random() * 255;
+        img.data[i]=v; img.data[i+1]=v*0.97; img.data[i+2]=v*0.93; img.data[i+3]=255;
+      }
+      fctx.putImageData(img, 0, 0);
+      grainFrames.push(fc);
+    }
+    let gf = 0, gt = 0;
+    function drawGrain(ox, oy) {
+      if (++gt % 4 === 0) gf = (gf+1) % GRAIN_FRAMES;
+      gCtx.clearRect(0,0,W,H);
+      gCtx.drawImage(grainFrames[gf], GRAIN_PAD+ox, GRAIN_PAD+oy, W, H, 0,0,W,H);
+    }
+
+    const layerMain = document.getElementById('layerMain');
+    const layerAlt  = document.getElementById('layerAlt');
+    const bgEl      = document.getElementById('bg');
+    const lens      = document.getElementById('lens');
+
+    let mx = W/2, my = H/2, lx = W/2, ly = H/2, bx = W/2, by = H/2;
+    let active = false;
+    const lerp = (a,b,t) => a+(b-a)*t;
+    const fadeIn  = LENS_R - Math.round(LENS_R * 0.08);
+    const fadeOut = LENS_R + Math.round(LENS_R * 0.06);
+
+    (function tick() {
+      lx = lerp(lx, mx, 0.09); ly = lerp(ly, my, 0.09);
+      bx = lerp(bx, mx, 0.018); by = lerp(by, my, 0.018);
+
+      if (!inverted) {
+        const bpx = ((bx/W)-0.5)*8, bpy = ((by/H)-0.5)*8;
+        bgEl.style.background =
+          `radial-gradient(ellipse 130% 130% at ${50+bpx}% ${50+bpy}%, #0d0d11 0%, #050506 100%)`;
+      } else {
+        bgEl.style.background = '';
+      }
+
+      drawGrain(-((bx/W-0.5)*GRAIN_PAD*2), -((by/H-0.5)*GRAIN_PAD*2));
+
+      const lLeft = lx - LENS_R, lTop = ly - LENS_R;
+      lens.style.left = lLeft+'px'; lens.style.top = lTop+'px';
+      lensCanvas.style.left = lLeft+'px'; lensCanvas.style.top = lTop+'px';
+      drawLens(lx, ly);
+
+      const activeLayer = inverted ? layerAlt : layerMain;
+      const isNearUI = document.body.classList.contains('near-ui');
+      if (active && !isNearUI) {
+        const mask = `radial-gradient(circle at ${lx}px ${ly}px, transparent ${fadeIn}px, black ${fadeOut}px)`;
+        activeLayer.style.webkitMaskImage = mask;
+        activeLayer.style.maskImage = mask;
+      } else {
+        activeLayer.style.webkitMaskImage = 'none';
+        activeLayer.style.maskImage = 'none';
+      }
+
+      requestAnimationFrame(tick);
+    })();
+
+    function activate() {
+      if (!active) { active = true; document.body.classList.add('lens-on'); }
+    }
+    function deactivate() {
+      active = false;
+      document.body.classList.remove('lens-on');
+      layerMain.style.webkitMaskImage = 'none'; layerMain.style.maskImage = 'none';
+      layerAlt.style.webkitMaskImage  = 'none'; layerAlt.style.maskImage  = 'none';
+    }
+
+    const TOUCH_Y_OFFSET = -(LENS_R + 18);
+
+    document.addEventListener('mousemove', e => {
+      if (!isFinePointer) return; // ignore synthesized mouse events on touch devices
+      if (document.body.classList.contains('chat-open') || document.body.classList.contains('near-ui')) return;
+      mx = e.clientX; my = e.clientY + TOUCH_Y_OFFSET; activate();
+    });
+    document.addEventListener('mouseleave', deactivate);
+
+    document.addEventListener('touchstart', e => {
+      if (document.body.classList.contains('chat-open')) return;
+      const t = e.touches[0];
+      mx = t.clientX; my = t.clientY + TOUCH_Y_OFFSET; activate();
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (document.body.classList.contains('chat-open')) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      mx = t.clientX; my = t.clientY + TOUCH_Y_OFFSET;
+    }, { passive: false });
+
+    document.addEventListener('touchend', deactivate);
+    document.addEventListener('touchcancel', deactivate);
+
+    /* ── Shake to toggle (mobile) ── */
+    /* Delta-based detection: measures CHANGE in acceleration each frame,
+       so gravity offset doesn't matter and any orientation works.        */
+    let lastShake = 0;
+    let prevAcc   = null;
+    const SHAKE_DELTA = 18;  // m/s² change per frame to count as shake
+    const SHAKE_GAP   = 1500;
+
+    function onMotion(e) {
+      /* Prefer pure acceleration (no gravity); fall back to with-gravity */
+      const raw = (e.acceleration && e.acceleration.x != null)
+                ? e.acceleration
+                : e.accelerationIncludingGravity;
+      if (!raw) return;
+      const ax = raw.x || 0, ay = raw.y || 0, az = raw.z || 0;
+      if (prevAcc) {
+        const dx = ax - prevAcc.x, dy = ay - prevAcc.y, dz = az - prevAcc.z;
+        const delta = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        const now = Date.now();
+        if (delta > SHAKE_DELTA && now - lastShake > SHAKE_GAP) {
+          lastShake = now;
+          toggleMode();
+        }
+      }
+      prevAcc = { x: ax, y: ay, z: az };
+    }
+
+    function startShake() {
+      window.addEventListener('devicemotion', onMotion);
+    }
+
+    if (typeof DeviceMotionEvent !== 'undefined') {
+      if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        /* iOS 13+: requestPermission must be called in a direct user gesture.
+           We hook the very first touchend (more reliable than touchstart on iOS). */
+        document.addEventListener('touchend', function askPerm() {
+          document.removeEventListener('touchend', askPerm);
+          DeviceMotionEvent.requestPermission()
+            .then(function(state) { if (state === 'granted') startShake(); })
+            .catch(function() {});
+        }, { passive: true, once: true });
+      } else {
+        startShake();
+      }
+    }
+
+    /* Mode toggle */
+    /* Switch: stop touch events from reaching document (lens handlers),
+       handle toggle in the switch's own listeners */
+    const switchEl = document.getElementById('switchTrack');
+    function toggleMode() {
+      inverted = !inverted;
+      document.body.classList.toggle('inverted', inverted);
+      deactivate();
+      renderText();
+    }
+    let switchTouchHandled = false;
+    switchEl.addEventListener('touchstart', function(e) {
+      e.stopPropagation(); // prevent document touchstart → activate()
+    }, { passive: true });
+    switchEl.addEventListener('touchend', function(e) {
+      e.stopPropagation(); // prevent document touchend → deactivate()
+      switchTouchHandled = true;
+      toggleMode();
+      setTimeout(function() { switchTouchHandled = false; }, 600);
+    }, { passive: true });
+    switchEl.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (!switchTouchHandled) toggleMode(); // desktop only
+    });
+
+  })();
+  </script>
+</body>
+</html>
