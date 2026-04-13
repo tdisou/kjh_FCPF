@@ -159,6 +159,7 @@
     #bgArt {
       position:fixed; inset:0; z-index:0;
       pointer-events:none;
+      filter: blur(0.6px);
     }
 
     /* ── Film grain ── */
@@ -602,9 +603,9 @@
     const W   = c.width, H = c.height;
     const TAU = Math.PI * 2;
 
-    /* ── Halftone grid (portrait mobile: dense 5px / desktop: 13px) ── */
+    /* ── Halftone grid (portrait mobile: 11px / desktop: 15px) ── */
     const isPortraitMobile = window.innerHeight > window.innerWidth && window.innerWidth < 768;
-    const SP   = isPortraitMobile ? 5 : 13;
+    const SP   = isPortraitMobile ? 11 : 15;
     const COLS = Math.ceil(W / SP) + 1;
     const ROWS = Math.ceil(H / SP) + 1;
 
@@ -613,19 +614,10 @@
     vc.width   = COLS; vc.height = ROWS;
     const vctx = vc.getContext('2d', { willReadFrequently: true });
 
-    /* ── Small grain canvas (stretched to full screen) ── */
-    const gc   = document.createElement('canvas');
-    gc.width   = 220; gc.height = 150;
-    const gctx = gc.getContext('2d');
-    const gImg = gctx.createImageData(220, 150);
-    const gBuf = gImg.data;
+    /* ── Temporal brightness smoothing (EMA) — eliminates camera-noise jitter ── */
+    const smoothBr = new Float32Array(COLS * ROWS);
+    const SMOOTH   = 0.88;   /* 0 = no smoothing, 1 = frozen; 0.88 = very calm */
 
-    /* ── Pre-baked CRT scan lines ── */
-    const sl   = document.createElement('canvas');
-    sl.width   = W; sl.height = H;
-    const slx  = sl.getContext('2d');
-    slx.fillStyle = 'rgba(0,0,0,0.06)';
-    for (let y = 0; y < H; y += 3) slx.fillRect(0, y, W, 1);
 
     /* ── Video element ── */
     const vid      = document.createElement('video');
@@ -699,17 +691,21 @@
         try { px = vctx.getImageData(0, 0, COLS, ROWS).data; }
         catch(e) { t++; requestAnimationFrame(draw); return; }
 
-        /* ── Halftone: single path for all dots ── */
+        /* ── Halftone: single path for all dots (EMA-smoothed brightness) ── */
         ctx.beginPath();
         for (let row = 0; row < ROWS; row++) {
           for (let col = 0; col < COLS; col++) {
-            const i4  = (row * COLS + col) * 4;
-            const br  = (px[i4] * 0.299 + px[i4+1] * 0.587 + px[i4+2] * 0.114) / 255;
+            const idx = row * COLS + col;
+            const i4  = idx * 4;
+            const rawBr = (px[i4] * 0.299 + px[i4+1] * 0.587 + px[i4+2] * 0.114) / 255;
+            /* Exponential moving average — smooths out camera noise */
+            smoothBr[idx] = smoothBr[idx] * SMOOTH + rawBr * (1.0 - SMOOTH);
+            const br = smoothBr[idx];
             /* Dark bg: white dots large where bright; Light bg: dark dots large where dark */
             const dotR = inv
-              ? SP * 0.44 * (1.0 - br)   /* light mode */
-              : SP * 0.44 * br;           /* dark mode  */
-            if (dotR > 0.5) {
+              ? SP * 0.46 * (1.0 - br)   /* light mode */
+              : SP * 0.46 * br;           /* dark mode  */
+            if (dotR > 1.5) {
               const x = col * SP, y = row * SP;
               ctx.moveTo(x + dotR, y);
               ctx.arc(x, y, dotR, 0, TAU);
@@ -718,29 +714,6 @@
         }
         ctx.fillStyle = inv ? '#0b0b18' : '#d5d8ee';
         ctx.fill();
-
-        /* ── Film grain ── */
-        for (let p = 0; p < gBuf.length; p += 4) {
-          const v  = (Math.random() * 210) | 0;
-          gBuf[p] = gBuf[p+1] = gBuf[p+2] = v;
-          gBuf[p+3] = (Math.random() * 32) | 0;
-        }
-        gctx.putImageData(gImg, 0, 0);
-        ctx.drawImage(gc, 0, 0, W, H);
-
-        /* ── CRT scan lines ── */
-        ctx.drawImage(sl, 0, 0);
-
-        /* ── VHS glitch: occasional horizontal strip shift ── */
-        if (Math.random() < 0.03) {
-          const gy = (Math.random() * H) | 0;
-          const gh = 2 + ((Math.random() * 7) | 0);
-          const gx = ((Math.random() - 0.5) * 55) | 0;
-          try {
-            const strip = ctx.getImageData(0, gy, W, gh);
-            ctx.putImageData(strip, gx, gy);
-          } catch(e) {}
-        }
 
       } else {
         ctx.clearRect(0, 0, W, H);
