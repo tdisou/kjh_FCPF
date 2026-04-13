@@ -603,9 +603,9 @@
     const W   = c.width, H = c.height;
     const TAU = Math.PI * 2;
 
-    /* ── Halftone grid (portrait mobile: 11px / desktop: 15px) ── */
+    /* ── Halftone grid (portrait mobile: 8px / desktop: 10px) ── */
     const isPortraitMobile = window.innerHeight > window.innerWidth && window.innerWidth < 768;
-    const SP   = isPortraitMobile ? 11 : 15;
+    const SP   = isPortraitMobile ? 8 : 10;
     const COLS = Math.ceil(W / SP) + 1;
     const ROWS = Math.ceil(H / SP) + 1;
 
@@ -616,7 +616,7 @@
 
     /* ── Temporal brightness smoothing (EMA) — eliminates camera-noise jitter ── */
     const smoothBr = new Float32Array(COLS * ROWS);
-    const SMOOTH   = 0.88;   /* 0 = no smoothing, 1 = frozen; 0.88 = very calm */
+    const SMOOTH   = 0.82;   /* 0 = no smoothing, 1 = frozen; 0.82 = calm but responsive */
 
 
     /* ── Video element ── */
@@ -700,12 +700,14 @@
             const rawBr = (px[i4] * 0.299 + px[i4+1] * 0.587 + px[i4+2] * 0.114) / 255;
             /* Exponential moving average — smooths out camera noise */
             smoothBr[idx] = smoothBr[idx] * SMOOTH + rawBr * (1.0 - SMOOTH);
-            const br = smoothBr[idx];
+            /* S-curve contrast boost: pushes dark→darker, bright→brighter for sharper silhouette */
+            const s = smoothBr[idx];
+            const br = s * s * (3 - 2 * s);
             /* Dark bg: white dots large where bright; Light bg: dark dots large where dark */
             const dotR = inv
-              ? SP * 0.46 * (1.0 - br)   /* light mode */
-              : SP * 0.46 * br;           /* dark mode  */
-            if (dotR > 1.5) {
+              ? SP * 0.50 * (1.0 - br)   /* light mode */
+              : SP * 0.50 * br;           /* dark mode  */
+            if (dotR > 0.8) {
               const x = col * SP, y = row * SP;
               ctx.moveTo(x + dotR, y);
               ctx.arc(x, y, dotR, 0, TAU);
